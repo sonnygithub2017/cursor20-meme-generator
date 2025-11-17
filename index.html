@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meme Generator</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Meme Generator</h1>
+        </header>
+
+        <div class="main-content">
+            <div class="controls-panel">
+                <div class="control-group">
+                    <label>Choose Template</label>
+                    <div class="template-gallery">
+                        <div class="template-item" data-template="assets/cartoon_puppy.jpg">
+                            <img src="assets/cartoon_puppy.jpg" alt="Template 1">
+                        </div>
+                        <div class="template-item" data-template="assets/dog_bird.jpg">
+                            <img src="assets/dog_bird.jpg" alt="Template 2">
+                        </div>
+                        <div class="template-item" data-template="assets/man_sofa.png">
+                            <img src="assets/man_sofa.png" alt="Template 3">
+                        </div>
+                        <div class="template-item" data-template="assets/puppy-lying-sweater.jpg">
+                            <img src="assets/puppy-lying-sweater.jpg" alt="Template 4">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label for="imageInput" class="file-input-label">
+                        <span>Upload Your Own Image</span>
+                        <input type="file" id="imageInput" accept="image/*" hidden>
+                    </label>
+                </div>
+
+                <div class="control-group">
+                    <label for="textInput">Add Text</label>
+                    <input type="text" id="textInput" placeholder="Type your meme text..." class="text-input">
+                    <button id="addTextBtn" class="btn btn-primary">Add Text</button>
+                </div>
+
+                <div class="control-group">
+                    <label for="fontSizeSlider">Font Size</label>
+                    <div class="size-controls">
+                        <input type="range" id="fontSizeSlider" min="12" max="120" value="48" class="slider">
+                        <input type="number" id="fontSizeInput" min="12" max="120" value="48" class="number-input">
+                        <span class="unit">px</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <button id="downloadBtn" class="btn btn-download" disabled>Download Meme</button>
+                </div>
+            </div>
+
+            <div class="canvas-container">
+                <canvas id="canvas"></canvas>
+                <div id="textBoxContainer" class="text-box-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+
