@@ -90,13 +90,99 @@ export default function MemeGenerator() {
   };
 
   useEffect(() => {
-    if (activeTextBoxId) {
+    if (activeTextBoxId !== null) {
       const textBox = textBoxes.find((tb) => tb.id === activeTextBoxId);
-      if (textBox) {
+      if (textBox && textBox.fontSize !== fontSize) {
         handleTextBoxUpdate(activeTextBoxId, { fontSize });
       }
     }
-  }, [fontSize]);
+  }, [fontSize, activeTextBoxId, textBoxes]);
+
+  const getTextBoxRect = (textBoxId) => {
+    const textBoxElement = document.getElementById(`textbox-${textBoxId}`);
+    if (!textBoxElement) return null;
+    const containerElement = textBoxElement.closest('.text-box-container');
+    if (!containerElement) return null;
+
+    const rect = textBoxElement.getBoundingClientRect();
+    const containerRect = containerElement.getBoundingClientRect();
+
+    return {
+      x: rect.left - containerRect.left,
+      y: rect.top - containerRect.top,
+      width: rect.width,
+      height: rect.height,
+    };
+  };
+
+  const breakWordIntoSegments = (context, word, maxWidth) => {
+    const segments = [];
+    let currentSegment = '';
+
+    for (const char of word) {
+      const tentative = currentSegment + char;
+      if (!currentSegment || context.measureText(tentative).width <= maxWidth) {
+        currentSegment = tentative;
+      } else {
+        segments.push(currentSegment);
+        currentSegment = char;
+      }
+    }
+
+    if (currentSegment) {
+      segments.push(currentSegment);
+    }
+
+    return segments;
+  };
+
+  const wrapTextToWidth = (context, text, maxWidth) => {
+    const safeMaxWidth = Math.max(40, maxWidth);
+    const lines = [];
+    const paragraphs = text.split('\n');
+
+    paragraphs.forEach((paragraph, paragraphIndex) => {
+      const words = paragraph.split(' ').filter((word) => word.length > 0);
+      let currentLine = '';
+
+      if (words.length === 0) {
+        lines.push(' ');
+      }
+
+      words.forEach((word) => {
+        const tentativeLine = currentLine ? `${currentLine} ${word}` : word;
+        if (context.measureText(tentativeLine).width <= safeMaxWidth) {
+          currentLine = tentativeLine;
+          return;
+        }
+
+        if (currentLine) {
+          lines.push(currentLine);
+        }
+
+        if (context.measureText(word).width <= safeMaxWidth) {
+          currentLine = word;
+          return;
+        }
+
+        const brokenWordSegments = breakWordIntoSegments(context, word, safeMaxWidth);
+        brokenWordSegments.slice(0, -1).forEach((segment) => {
+          lines.push(segment);
+        });
+        currentLine = brokenWordSegments[brokenWordSegments.length - 1] || '';
+      });
+
+      if (currentLine) {
+        lines.push(currentLine);
+      }
+
+      if (paragraphIndex < paragraphs.length - 1) {
+        lines.push(' ');
+      }
+    });
+
+    return lines.length > 0 ? lines : [' '];
+  };
 
   const renderToCanvas = (canvasElement) => {
     if (!currentImage || !canvasElement) return null;
@@ -106,44 +192,59 @@ export default function MemeGenerator() {
     tempCanvas.height = canvasElement.height;
     const tempCtx = tempCanvas.getContext('2d');
 
-    tempCtx.drawImage(currentImage, 0, 0, canvasElement.width, canvasElement.height);
+    const canvasWidth = canvasElement.width;
+    const canvasHeight = canvasElement.height;
+
+    tempCtx.drawImage(currentImage, 0, 0, canvasWidth, canvasHeight);
 
     textBoxes.forEach((textBox) => {
       const text = textBox.text;
-      const fontSize = textBox.fontSize;
+      if (!text) {
+        return;
+      }
 
+      const fontSize = textBox.fontSize;
+      const padding = 12;
       tempCtx.font = `bold ${fontSize}px Arial, sans-serif`;
       tempCtx.textAlign = 'center';
       tempCtx.textBaseline = 'middle';
 
-      const textBoxElement = document.getElementById(`textbox-${textBox.id}`);
-      let textX, textY;
+      const rect = getTextBoxRect(textBox.id);
+      const fallbackWidth = Math.min(canvasWidth - padding * 2, canvasWidth * 0.9);
+      const safeBoxWidth = Math.max(
+        80,
+        Math.min(canvasWidth - padding * 2, rect?.width || fallbackWidth)
+      );
+      const lineWidth = Math.max(40, safeBoxWidth - padding * 2);
 
-      if (textBoxElement) {
-        const rect = textBoxElement.getBoundingClientRect();
-        const containerRect = containerRef.current?.getBoundingClientRect();
-        if (containerRect) {
-          const relativeX = rect.left - containerRect.left + rect.width / 2;
-          const relativeY = rect.top - containerRect.top + rect.height / 2;
-          textX = relativeX;
-          textY = relativeY;
-        } else {
-          textX = textBox.x + 50;
-          textY = textBox.y + 15;
-        }
-      } else {
-        textX = textBox.x + 50;
-        textY = textBox.y + 15;
-      }
+      let originX = rect ? rect.x : textBox.x;
+      let originY = rect ? rect.y : textBox.y;
+      let textX = originX + safeBoxWidth / 2;
+
+      const lines = wrapTextToWidth(tempCtx, text, lineWidth);
+      const lineHeight = fontSize * 1.2;
+      const totalHeight = Math.max(lineHeight, lines.length * lineHeight);
+      let textY = originY + totalHeight / 2;
+
+      const halfWidth = safeBoxWidth / 2;
+      const halfHeight = totalHeight / 2;
+
+      textX = Math.max(halfWidth + padding, Math.min(textX, canvasWidth - halfWidth - padding));
+      textY = Math.max(halfHeight + padding, Math.min(textY, canvasHeight - halfHeight - padding));
 
       tempCtx.strokeStyle = '#000000';
       tempCtx.lineWidth = 4;
       tempCtx.lineJoin = 'round';
       tempCtx.miterLimit = 2;
-      tempCtx.strokeText(text, textX, textY);
-
       tempCtx.fillStyle = '#FFFFFF';
-      tempCtx.fillText(text, textX, textY);
+
+      let currentLineY = textY - halfHeight + lineHeight / 2;
+
+      lines.forEach((line) => {
+        tempCtx.strokeText(line, textX, currentLineY);
+        tempCtx.fillText(line, textX, currentLineY);
+        currentLineY += lineHeight;
+      });
     });
 
     return tempCanvas;

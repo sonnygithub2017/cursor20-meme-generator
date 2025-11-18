@@ -23,10 +23,9 @@ export default function MemeCard({ meme, user }) {
   const hasUpvoted = Boolean(
     shouldCheckUpvotes && userUpvotes.data?.upvotes?.length > 0
   );
-  const isOwnMeme = Boolean(!isSeedMeme && user && meme.userId === user.id);
 
   const handleUpvote = async () => {
-    if (!user || hasUpvoted || isOwnMeme || isUpvoting || isSeedMeme) return;
+    if (!user || hasUpvoted || isUpvoting || isSeedMeme) return;
 
     setIsUpvoting(true);
     try {
@@ -69,7 +68,7 @@ export default function MemeCard({ meme, user }) {
           <button
             className={`upvote-btn ${hasUpvoted ? 'upvoted' : ''}`}
             onClick={handleUpvote}
-            disabled={!user || hasUpvoted || isOwnMeme || isUpvoting || isSeedMeme}
+            disabled={!user || hasUpvoted || isUpvoting || isSeedMeme}
             title={
               isSeedMeme
                 ? 'Sample memes are read-only'

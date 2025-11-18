@@ -1,5 +1,12 @@
 import { useEffect, useRef } from 'react';
 
+const isEditableTarget = (target) => {
+  if (!target) return false;
+  if (target.isContentEditable) return true;
+  const tagName = target.tagName?.toLowerCase();
+  return tagName === 'input' || tagName === 'textarea' || tagName === 'select';
+};
+
 export default function CanvasEditor({
   currentImage,
   textBoxes,
@@ -43,7 +50,7 @@ export default function CanvasEditor({
     if (!textBoxContainerRef.current) return;
 
     const handleMouseMove = (e) => {
-      if (!activeTextBoxId) return;
+      if (activeTextBoxId === null) return;
       const activeTextBox = textBoxes.find((tb) => tb.id === activeTextBoxId);
       if (!activeTextBox || !activeTextBox.isDragging) return;
 
@@ -63,7 +70,7 @@ export default function CanvasEditor({
     };
 
     const handleMouseUp = () => {
-      if (activeTextBoxId) {
+      if (activeTextBoxId !== null) {
         const activeTextBox = textBoxes.find((tb) => tb.id === activeTextBoxId);
         if (activeTextBox) {
           onTextBoxUpdate(activeTextBox.id, { isDragging: false });
@@ -82,11 +89,18 @@ export default function CanvasEditor({
 
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if ((e.key === 'Delete' || e.key === 'Backspace') && activeTextBoxId) {
-        const activeTextBox = textBoxes.find((tb) => tb.id === activeTextBoxId);
-        if (activeTextBox) {
-          onTextBoxUpdate(activeTextBox.id, { deleted: true });
-        }
+      if (e.key !== 'Delete') {
+        return;
+      }
+      if (isEditableTarget(e.target)) {
+        return;
+      }
+      if (activeTextBoxId === null) {
+        return;
+      }
+      const activeTextBox = textBoxes.find((tb) => tb.id === activeTextBoxId);
+      if (activeTextBox) {
+        onTextBoxUpdate(activeTextBox.id, { deleted: true });
       }
     };
 
