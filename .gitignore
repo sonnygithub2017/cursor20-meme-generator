@@ -34,11 +34,16 @@ node_modules/
 # Build outputs
 dist/
 build/
+.vite/
 
 # Environment variables
 .env
 .env.local
 .env.*.local
+
+# Testing
+coverage/
+*.lcov
 
 # Cursor IDE files
 .cursor/
